@@ -1,154 +1,166 @@
-#ifndef CALK_LEXER_H
-#define CALK_LEXER_H
-
+#pragma once
 #include <iostream>
 #include <string>
 #include <cctype>
 #include <vector>
+#include <algorithm>
 
-// Типы токенов
-enum class TokenType {
-    IDENTIFIER,  // идентификатор (a, x, _x, a_b_c)
-    NUMBER,      // число (1, 1.0)
-    OPERATOR,    // оператор (+, -, *, /, ^)
-    LPAREN,      // левая скобка (
-    RPAREN,      // правая скобка )
-    EOEX,        // конец выражения
-    ERROR        // лексическая ошибка
+
+enum class TokenType                // ура типы токенов в лексере
+{
+    NUM,                            // число (1, 1.0) — для узла числа
+    VAR,                            // идентификатор (x, my_var) — для узла переменной
+    OP,                             // оператор (+, -, *, /, ^) — для узла бинарной или унарной операции
+    FUNC,                           // имя функции (sin, log, sqrt) — для узла функции
+    LPAREN,                         // левая скобка (
+    RPAREN,                         // правая скобка )
+    END,                            // конец выражения
+    ERROR                           // лексическая ошибка
 };
 
-
-struct Token {
-    TokenType type;
-    std::string value;
-
-    std::string view() const {
-        return value;
-    }
+struct Token                        // структура токена
+{
+    TokenType type;                 // тип токена
+    std::string value;              // строка значений
 };
 
-class Lexer {
+class Lexer
+{
 private:
-    const std::string& input;
-    size_t pos;
+    const std::string& input;       // строка входа
+    size_t pos;                     // позиция в строке
 
-    void skipWhitespace() {
-        while (pos < input.size() && std::isspace(static_cast<unsigned char>(input[pos]))) {
-            pos = pos + 1;
+    // если идентификатор совпадает, это FUNC, а не VAR
+    static bool isFunctionName(const std::string& s)
+    {
+        return s == "sin" || s == "cos" || s == "tan" || s == "asin" || s == "acos" || s == "atan" || s == "exp" || s == "log" || s == "sqrt";
+    }
+
+    // пропуск пробелов
+    void skipWhitespace()
+    {
+        while (pos < input.size() && std::isspace(static_cast<unsigned char>(input[pos])))
+        {
+            ++pos;
         }
     }
 
-    void toLowerInPlace(std::string& s) {
-        for (size_t i = 0; i < s.size(); i = i + 1) {
-            if (s[i] >= 'A' && s[i] <= 'Z') {
-                s[i] = s[i] + 32;
-            }
+    // X -> x
+    void toLowerInPlace(std::string& s)
+    {
+        for (char& c : s)
+        {
+            if (c >= 'A' && c <= 'Z') c = c + 32;
         }
     }
 
-    bool isIdentifierChar(char c) {
-        return std::isalpha(static_cast<unsigned char>(c)) ||
-               std::isdigit(static_cast<unsigned char>(c)) ||
-               c == '_';
+    // знак идентификатора - буква, нижнее подчеркивание или цифра
+    bool isIdentifierChar(char c)
+    {
+        return std::isalpha(static_cast<unsigned char>(c)) || std::isdigit(static_cast<unsigned char>(c)) || c == '_';
     }
 
-    bool isIdentifierStart(char c) {
+    // знак начала идентификатора - буква или нижнее подчеркивание
+    bool isIdentifierStart(char c)
+    {
         return std::isalpha(static_cast<unsigned char>(c)) || c == '_';
     }
 
-    Token readIdentifier() {
+    // читаем идентификатор
+    Token readIdentifier()
+    {
         std::string value;
-        while (pos < input.size() && isIdentifierChar(input[pos])) {
+        while (pos < input.size() && isIdentifierChar(input[pos]))                 // пока позиция не конец строки или это знак идентификатора
+        {
             value += input[pos];
-            pos = pos + 1;
+            ++pos;
         }
-        toLowerInPlace(value);
-        return {TokenType::IDENTIFIER, value};
+        toLowerInPlace(value);                                                   // понижаем регистр
+        // Если имя — функция, возвращаем FUNC, иначе VAR
+        TokenType type = isFunctionName(value) ? TokenType::FUNC : TokenType::VAR;  // имя функции - функ, не имя - вар
+        return {type, value};
     }
 
-    Token readNumber() {
+    // читаем число, базовая функция хз что пояснять
+    Token readNumber()
+    {
         std::string value;
         bool hasDot = false;
 
-        while (pos < input.size()) {
+        while (pos < input.size())
+        {
             char c = input[pos];
-            if (std::isdigit(static_cast<unsigned char>(c))) {
+            if (std::isdigit(static_cast<unsigned char>(c)))
+            {
                 value += c;
-                pos = pos + 1;
-            } else if (c == '.' && !hasDot) {
+                ++pos;
+            } else if (c == '.' && !hasDot)
+            {
                 hasDot = true;
                 value += c;
-                pos = pos + 1;
-                if (pos >= input.size() || !std::isdigit(static_cast<unsigned char>(input[pos]))) {
+                ++pos;
+                if (pos >= input.size() || !std::isdigit(static_cast<unsigned char>(input[pos])))
+                {
                     return {TokenType::ERROR, "ERROR"};
                 }
-            } else if (isIdentifierChar(c) && c != '.') {
-                return {TokenType::ERROR, "ERROR"};
-            } else {
+            } else if (isIdentifierChar(c) && c != '.')
+            {
+                return {TokenType::ERROR, "ERROR"}; // число сразу за буквой — ошибка
+            } else
+            {
                 break;
             }
         }
 
-        if (value.size() > 1 && value[0] == '0') {
-            if (!hasDot || value[1] != '.') {
-                return {TokenType::ERROR, "ERROR"};
-            }
+        // проверка на ведущие нули, 002 - ошибка, 0.5 - ок
+        if (value.size() > 1 && value[0] == '0' && value[1] != '.')
+        {
+            return {TokenType::ERROR, "ERROR"};
         }
 
-        return {TokenType::NUMBER, value};
+        return {TokenType::NUM, value};
     }
 
 public:
     Lexer(const std::string& expr) : input(expr), pos(0) {}
 
-    Token next() {
-        skipWhitespace();
+    // функция чтения следующего токена
+    Token next()
+    {
+        skipWhitespace();                               // скип пробелов
 
-        if (pos >= input.size()) {
-            return {TokenType::EOEX, ""};
+        if (pos >= input.size())                        // вышли за пределы - ендим
+        {
+            return {TokenType::END, ""};
         }
 
         char c = input[pos];
 
-        if (isIdentifierStart(c)) {
+        // в зависимости от условий либо вызываем функции, либо сразу записываем токен. Если ничего не выбрали - это будет ошибочка
+        if (isIdentifierStart(c))
+        {
             return readIdentifier();
         }
-
-        if (std::isdigit(static_cast<unsigned char>(c))) {
+        if (std::isdigit(static_cast<unsigned char>(c)))
+        {
             return readNumber();
         }
-
-        if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^') {
+        if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^')
+        {
             std::string val(1, c);
-            pos = pos + 1;
-            return {TokenType::OPERATOR, val};
+            ++pos;
+            return {TokenType::OP, val};
         }
-        if (c == '(') {
-            pos = pos + 1;
+        if (c == '(')
+        {
+            ++pos;
             return {TokenType::LPAREN, "("};
         }
-        if (c == ')') {
-            pos = pos + 1;
+        if (c == ')')
+        {
+            ++pos;
             return {TokenType::RPAREN, ")"};
         }
-
         return {TokenType::ERROR, "ERROR"};
     }
 };
-
-std::string lexer_flow_concatenator(const std::string& expression) {
-    Lexer lexer(expression);
-    std::string result = "";
-    Token tok = lexer.next();
-    while (tok.type != TokenType::EOEX) {
-        if (tok.type == TokenType::ERROR) {
-            return "ERROR\n";
-        }
-        result += (tok.view() + "\n");
-        tok = lexer.next();
-    }
-    return result;
-}
-
-
-#endif //CALK_LEXER_H
