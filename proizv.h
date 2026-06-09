@@ -8,7 +8,6 @@ inline NodePtr cloneNode(const NodePtr& n)
     return n ? std::make_shared<Node>(*n) : nullptr;
 }
 
-
 // по сути все примерно так же как овуляторе, но чутка сложнее. суть та же, математика изменилась
 NodePtr derivative(const NodePtr& node, const std::string& var)
 {
@@ -18,7 +17,7 @@ NodePtr derivative(const NodePtr& node, const std::string& var)
         case Node::NUM:
             return std::make_shared<Node>(0.0);
 
-        // x` = 1, y` = 0
+        // x` = 1, y` = 0, где x - переменная по которой ищем производную
         case Node::VAR:
             return std::make_shared<Node>(node->name == var ? 1.0 : 0.0);
 
@@ -126,7 +125,7 @@ NodePtr derivative(const NodePtr& node, const std::string& var)
                 f_prime = std::make_shared<Node>(0.0);
             }
 
-            return std::make_shared<Node>('*', f_prime, du);
+            return std::make_shared<Node>('*', f_prime, du);        // производная сложной функции
         }
     }
     return nullptr;

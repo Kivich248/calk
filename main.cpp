@@ -15,17 +15,14 @@
 #include "proizv.h"
 #include "simple.h"
 
-// безопасное приведение к нижнему регистру
+// безопасное приведение к нижнему регистру через stl-алгоритмы и лямбда-функции. ужас согласен
 static std::string toLower(std::string s)
 {
-    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c)
-    {
-        return std::tolower(c);
-    });
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
     return s;
 }
 
-// удаление символов \r для кроссплатформенной совместимости
+// удаление символов \r для кроссплатформенной совместимости через stl-алгоритмы и лямбда-функции. ужас согласен х2
 static std::string cleanLine(std::string s)
 {
     s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
@@ -34,7 +31,7 @@ static std::string cleanLine(std::string s)
 
 int main()
 {
-    // что-то для быстрого и корректного ввода
+    // что-то для быстрого и корректного ввода, не спрашивайте пж
     std::ios_base::sync_with_stdio(false);
     std::cout << std::setprecision(10) << std::defaultfloat << std::unitbuf;
 
@@ -62,6 +59,8 @@ int main()
             }
 
             // без этого вывод не работал до того момента, как я начну новую итерацию цикла
+            // то есть я должен был ввести тип работы кол-во переменных, таблицу перменных, само выражение
+            // СНОВА ввести команду и кол-во переменных и только после этого выводился результат выражения которое было
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
             // читаем строку с выражением
@@ -74,12 +73,14 @@ int main()
                 throw std::runtime_error("ERROR Syntax error: empty expression");
             }
 
-            // страдания. применяем лексер, массив токенов, заполняем массив токенов
+            // страдания. применяем лексер, создаем массив токенов, заполняем массив токенов
             Lexer lexer(expression);
             std::vector<Token> tokens;
             Token tok = lexer.next();
-            while (tok.type != TokenType::END) {
-                if (tok.type == TokenType::ERROR) {
+            while (tok.type != TokenType::END)
+            {
+                if (tok.type == TokenType::ERROR)
+                {
                     throw std::runtime_error("ERROR Lexical error");
                 }
                 tokens.push_back(tok);
@@ -87,7 +88,8 @@ int main()
             }
 
             // кажется все просто, а я страдал над тем чтобы эти две строчки правда строили дерево сутки-другие
-            // конструктим parser и применяем к нему метода parse
+            // конструктим parser через массив токенов
+            // применяем к нему метод parse, получая ДЕРЕВО
             Parser parser(std::move(tokens));
             NodePtr tree = parser.parse();
 

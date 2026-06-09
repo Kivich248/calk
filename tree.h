@@ -9,38 +9,45 @@ using NodePtr = std::shared_ptr<Node>;
 
 struct Node
 {
-	enum Type { NUM, VAR, BIN_OP, UNARY_OP, FUNC } type;													// тип узелка
-	double num = 0;																							// если число - заменим
-	std::string name;																						// имя переменной
-	char op = 0;																							// знак операции
-	NodePtr left;																							// правый и левый потомки для некоммутативных операций
-	NodePtr right;
-	NodePtr arg;																							// аргумент функции/унарный операции
+	enum Type { NUM, VAR, BIN_OP, UNARY_OP, FUNC } type;											// тип узелка
+	double num = 0;																					// если число - заменим
+	std::string name;																				// имя переменной
+	char op = 0;																					// знак операции
+	NodePtr left;																					// правый и левый потомки для некоммутативных операций
+	NodePtr right;                                                                                  // то есть оно и для коммутативных пойдет, но для некомутативных будем записывать конкретно вправо/влево
+	NodePtr arg;																					// аргумент функции/унарный операции
 
-	Node(double v) : type(NUM), num(v) {}																	// конструктор чиселка
+	Node(double v) : type(NUM), num(v) {}															// конструктор чиселка
 
-	Node(std::string n) : type(VAR), name(std::move(n))														// конструктор переменной
+	Node(std::string n) : type(VAR), name(std::move(n))												// конструктор переменной
+	{
+		for (char& c : name) c = std::tolower(static_cast<unsigned char>(c));                       // с понижение регистра
+	}
+
+    // move вместо копирования передает ссылку, чтобы дерево строилось
+
+    // конструктор бинарной операции
+	Node(char o, NodePtr l, NodePtr r) : type(BIN_OP), op(o), left(std::move(l)), right(std::move(r)) {}
+
+    // конструктор унарной операции
+	Node(char o, NodePtr a) : type(UNARY_OP), op(o), arg(std::move(a)) {}
+
+    // конструктор функции
+	Node(std::string n, NodePtr a) : type(FUNC), name(std::move(n)), arg(std::move(a))
 	{
 		for (char& c : name) c = std::tolower(static_cast<unsigned char>(c));
 	}
 
-	Node(char o, NodePtr l, NodePtr r) : type(BIN_OP), op(o), left(std::move(l)), right(std::move(r)) {}	// конструктор бинарной операции
-
-	Node(char o, NodePtr a) : type(UNARY_OP), op(o), arg(std::move(a)) {}									// конструктор унарной операции
-
-	Node(std::string n, NodePtr a) : type(FUNC), name(std::move(n)), arg(std::move(a))						// конструктор функции
-	{
-		for (char& c : name) c = std::tolower(static_cast<unsigned char>(c));
-	}
-
-	Node(const Node& other) : type(other.type), num(other.num), name(other.name), op(other.op)			// ура копирование
+    // ура копирование
+	Node(const Node& other) : type(other.type), num(other.num), name(other.name), op(other.op)
 	{
 		if (other.left)  left  = NodePtr(new Node(*other.left));
 		if (other.right) right = NodePtr(new Node(*other.right));
 		if (other.arg)   arg   = NodePtr(new Node(*other.arg));
 	}
 
-	std::string toString() const																			// ура узел в строку
+    // ура узел в строку, нужно в одном месте, поскольку само выражение мы пишем ток в 1 из 3х режимов
+	std::string toString() const
 	{
 		switch (type)
 		{

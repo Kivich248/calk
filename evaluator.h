@@ -53,7 +53,7 @@ double evaluate(const NodePtr& node, const std::unordered_map<std::string, doubl
         case Node::FUNC:
         {
             double x = evaluate(node->arg, vars);
-            auto domain_err = [&](const std::string& func)              // универсально каидем ошибки для красивой записи следующих ифов
+            auto domain_err = [&](const std::string& func)              // универсально кидем ошибки для красивой записи следующих ифов
             {
                 throw std::runtime_error("ERROR Domain error: " + func + "(" + std::to_string(x) + ")");
             };

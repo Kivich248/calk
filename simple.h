@@ -37,8 +37,8 @@ NodePtr simplify(NodePtr node) {
             if (node->op == '+') return node->arg;
 
             // -(-x) -> x
-            if (node->op == '-' && node->arg &&
-                node->arg->type == Node::UNARY_OP && node->arg->op == '-') {
+            if (node->op == '-' && node->arg && node->arg->type == Node::UNARY_OP && node->arg->op == '-')
+            {
                 return node->arg->arg;
             }
             break;

@@ -77,7 +77,7 @@ private:
         }
         toLowerInPlace(value);                                                   // понижаем регистр
         // Если имя — функция, возвращаем FUNC, иначе VAR
-        TokenType type = isFunctionName(value) ? TokenType::FUNC : TokenType::VAR;  // имя функции - функ, не имя - вар
+        TokenType type = isFunctionName(value) ? TokenType::FUNC : TokenType::VAR;  // имя функции - функ, не функция - вар
         return {type, value};
     }
 
@@ -101,18 +101,18 @@ private:
                 ++pos;
                 if (pos >= input.size() || !std::isdigit(static_cast<unsigned char>(input[pos])))
                 {
-                    return {TokenType::ERROR, "ERROR"};
+                    return {TokenType::ERROR, "ERROR"};     // вышли за пределы или не число
                 }
-            } else if (isIdentifierChar(c) && c != '.')
+            } else if (isIdentifierChar(c) && c != '.')     // не число не точка и знак индификатора(_, буквы)
             {
-                return {TokenType::ERROR, "ERROR"}; // число сразу за буквой — ошибка
+                return {TokenType::ERROR, "ERROR"};         // ошибки вида 1u
             } else
             {
                 break;
             }
         }
 
-        // проверка на ведущие нули, 002 - ошибка, 0.5 - ок
+        // проверка на ведущие нули, 002 - ошибка, 0.5 - ок, проверка уже после цикла, поэтому если value[1] нет ниче не случится
         if (value.size() > 1 && value[0] == '0' && value[1] != '.')
         {
             return {TokenType::ERROR, "ERROR"};
@@ -122,7 +122,7 @@ private:
     }
 
 public:
-    Lexer(const std::string& expr) : input(expr), pos(0) {}
+    Lexer(const std::string& expr) : input(expr), pos(0) {}         // конструктор, нужна ссылка на строку или че то вроде
 
     // функция чтения следующего токена
     Token next()

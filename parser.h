@@ -55,15 +55,42 @@ public:
 // сложение и вычитание, низший приоритет
 NodePtr Parser::parseExpr()
 {
-    NodePtr left = parseTerm();                                             // явная рекурсия между функциями в порядке приоритета
-    while (pos < tokens.size() && tokens[pos].type == TokenType::OP)        // а вдруг подряд
+    NodePtr left = parseTerm();
+    // явная рекурсия между функциями в порядке приоритета, по логике она создаст первую самую левую часть дерева
+
+    while (pos < tokens.size() && tokens[pos].type == TokenType::OP)
     {
         std::string& opStr = tokens[pos].value;
         if (opStr == "+" || opStr == "-")
         {
             char op = opStr[0];
             ++pos;
-            left = std::make_shared<Node>(op, std::move(left), parseTerm());  // шоооок parseTerm() тут выступает как правый потомок, то есть рекурсия. присваивание к left тут умное, поэтому дерево строится
+            left = std::make_shared<Node>(op, std::move(left), parseTerm());
+            // шоооок parseTerm() тут выступает как правый потомок, то есть рекурсия
+            // make_shared<Node> делает умные штуки с памятью в куче и создает NodePtr через конструкторы Node
+            // то есть мы уже построили все что можно в left в строке 58, вызвав рекурсию много раз и сменив pos, поэтому новый
+            // parseTerm() выдаст не дерево left, тк глобальная переменная pos уже другая
+            // и мы не пишем std::make_shared<Node>(op, parseTerm(), parseTerm()); поскольку это нарушит рекурсию и не гарантирует однозначность
+            // когда мы делаем тут std::move(left) мы типо говорим что теперь то что было в left станет левым потомком нового узла left
+            // типо вот было left, а станет вот такое left и потом начнет вычисляться уже правый parseTerm и менять pos
+            //          *                           +
+            //         / \                         / \
+            //       sin  5                       *   parseTerm()
+            //        |                          / \
+            //        2                        sin  5
+            //                                  |
+            //                                  2
+            // while тут работает не явно тк pos - глобальная переменная и по сути ты вот досчитал дерево, которое я написал выше и
+            // while проверяется еще раз и может оказаться что новый pos снова подходит и дерево выше может снова сделать move(left)
+            //                    -
+            //                   / \
+            //                  +   parseTerm() - новый, относительно нового pos
+            //                 / \
+            //                *   parseTerm()
+            //               / \    (уже посчитан)
+            //             sin  5    (и он изменил pos)
+            //              |
+            //              2
         } else break;
     }
     return left;
@@ -86,7 +113,7 @@ NodePtr Parser::parseTerm()
     return left;
 }
 
-// унарные + и -, строго один знак, приоритет вышеч чем у */÷, но ниже чем у ^
+// унарные + и -, строго один знак, приоритет выше чем у */÷, но ниже чем у ^
 NodePtr Parser::parseUnary()
 {
     if (pos < tokens.size() && tokens[pos].type == TokenType::OP)
@@ -121,7 +148,7 @@ NodePtr Parser::parsePrimary()
 {
     if (match(TokenType::NUM))
     {
-        return std::make_shared<Node>(std::stod(tokens[pos-1].value));
+        return std::make_shared<Node>(std::stod(tokens[pos-1].value));      // -1 тк код функции match делает pos ++
     }
     if (match(TokenType::VAR))
     {
@@ -149,3 +176,6 @@ NodePtr Parser::parsePrimary()
 // перед match я бы записал номер ASCII в отдельные uint_8
 // к сожалению, номера скобок не симметричны, поэтому пришлось бы ручками работать/минифункцию накатать и добавить в иф помимо
 // мэтча с правильным типом в целом
+
+// upd от 09.06: я честно хотел это сделать, но спустя 4 дня после того как закончил лабу я заболел сначала ангиной, потом пневмонией
+// и вот только вышел с больничного

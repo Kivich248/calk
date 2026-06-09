@@ -25,7 +25,7 @@ static std::string toLower(std::string s)
     return s;
 }
 
-// запуск подсчтеа
+// запуск подсчета
 double run_eval(const std::string& expr, const std::unordered_map<std::string, double>& vars = {}) {
     std::unordered_map<std::string, double> norm_vars;
     for (const auto& [k, v] : vars) norm_vars[toLower(k)] = v;
@@ -65,7 +65,7 @@ double run_deriv_eval(const std::string& expr, const std::string& var, double va
     if (std::abs((a) - (b)) > (eps)) \
         throw std::runtime_error("Value mismatch: " #a " ~= " #b ", got " + std::to_string(a))
 
-// проверяем выброс ошибки: выбросилоли, правильно ли написало
+// проверяем выброс ошибки: выбросило ли, правильно ли написало
 #define EXPECT_ERROR(expr, substr) \
     try { \
         expr; \
@@ -78,7 +78,7 @@ double run_deriv_eval(const std::string& expr, const std::string& var, double va
             throw std::runtime_error("Wrong error: " + msg + " (expected '" substr "')"); \
     }
 
-// я не очень понял как оно работает но оно работает
+// я не очень понял как оно работает, но оно работает
 std::vector<std::pair<std::string, std::function<void()>>> g_tests;
 void run(const std::string& name, std::function<void()> func) { g_tests.emplace_back(name, func); }
 #define TEST(name) \
